@@ -181,14 +181,14 @@ saveVideo = (media) ->
 getMinInstagramId = (tagName, callback) ->
   redisClient.get 'min-instagram-id:channel:' + tagName, callback
 
-setMinInstagramId = (tagName, min_tag_instagram_id) ->
-  try
-    if not min_tag_instagram_id then min_tag_instagram_id = ''
-    debug 'setting min_tag_instagram_id: ' + min_tag_instagram_id
-    redisClient.set 'min-instagram-id:channel:' + tagName, min_tag_instagram_id
-  catch e
-    console.log 'Error parsing min instagram Id'
-    console.log e
+getSessionStatus = (sessionId, callback) ->
+  redisClient.get sessionId, callback
+
+primeSession = (sessionId) ->
+  redisClient.set sessionId, 'prime'
+
+activateSession = (sessionId) ->
+  redisClient.set sessionId, 'active'
 
 getRandAccessToken = (tagName, callback) ->
   redisClient.srandmember 'tokens:' + tagName, callback
@@ -204,12 +204,7 @@ getCurrentSubscriptions = (callback) ->
 redis = require 'redis'
 redisClient = redis.createClient(settings.REDIS_PORT, settings.REDIS_HOST)
 
-exports.isValidRequest            = isValidRequest
-exports.debug                     = debug
-exports.createSubscription        = createSubscription
-exports.processTag                = processTag
-exports.getVideo                  = getVideo
-exports.getVideos                 = getVideos
-exports.getMinInstagramId         = getMinInstagramId
-exports.setMinInstagramId         = setMinInstagramId
-exports.checkIfSubscriptionExists = checkIfSubscriptionExists
+exports.debug = debug
+exports.primeSession = primeSession
+exports.activateSession = activateSession
+exports.getSessionStatus = getSessionStatus
