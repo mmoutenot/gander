@@ -26,6 +26,8 @@ isValidRequest = (request) ->
 debug = (msg) ->
   console.log msg  if settings.debug
 
+exports.debug = debug
+
 checkIfSubscriptionExists = (tagName, callback) ->
   redisClient.sismember ['subscriptions', tagName], callback
 
@@ -167,36 +169,20 @@ saveVideo = (media) ->
     return console.error 'error saving video: ' + err if err
   return video
 
-# In order to only ask for the most recent media, we store the MAXIMUM Id
-# of the media for every tag we've fetched. This way, when we get an
-# update, we simply provide a min_id parameter to the settings.inst API that
-# fetches all media that have been posted *since* the min_id.
-#
-# You might notice there's a fatal flaw in this logic: We create
-# media objects once your upload finishes, not when you click 'done' in the
-# app. This means that if you take longer to press done than someone else
-# who will trigger an update on your same tag, then we will skip
-# over your media.
+exports.SESSION_STATUS_PENDING = 'PENDING'
+exports.SESSION_STATUS_ACTIVE = 'ACTIVE'
+exports.SESSION_STATUS_COMPLETE = 'COMPLETE'
+exports.getSessionStatus = (sessionId, callback) ->
+  redisClient.get "status:#{ sessionId }", callback
 
-getMinInstagramId = (tagName, callback) ->
-  redisClient.get 'min-instagram-id:channel:' + tagName, callback
+exports.primeSession = (sessionId) ->
+  redisClient.set "status:#{ sessionId }", exports.SESSION_STATUS_PENDING
 
-getSessionStatus = (sessionId, callback) ->
-  redisClient.get sessionId, callback
+exports.activateSession = (sessionId) ->
+  redisClient.set "status:#{ sessionId }", exports.SESSION_STATUS_ACTIVE
 
-primeSession = (sessionId) ->
-  redisClient.set sessionId, 'prime'
-
-activateSession = (sessionId) ->
-  redisClient.set sessionId, 'active'
-
-getRandAccessToken = (tagName, callback) ->
-  redisClient.srandmember 'tokens:' + tagName, callback
-
-getCurrentSubscriptions = (callback) ->
-  subscriptions = redisClient.lrange 'subscriptions', 0, -1, (error, media) ->
-    callback error, tagName, media
-
+exports.completeSession = (sessionId) ->
+  redisClient.set "status:#{ sessionId }", exports.SESSION_STATUS_COMPLETE
 
 ########################################
 # Requires and Exports
@@ -204,7 +190,3 @@ getCurrentSubscriptions = (callback) ->
 redis = require 'redis'
 redisClient = redis.createClient(settings.REDIS_PORT, settings.REDIS_HOST)
 
-exports.debug = debug
-exports.primeSession = primeSession
-exports.activateSession = activateSession
-exports.getSessionStatus = getSessionStatus

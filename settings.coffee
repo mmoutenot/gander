@@ -58,5 +58,6 @@ exports.TOK_KEY    = process.env.TOK_KEY or 'KEY'
 exports.TOK_SECRET = process.env.TOK_SECRET or 'SECRET'
 
 OpenTok = require 'opentok'
+exports.OpenTok = OpenTok
 exports.tok = new OpenTok.OpenTokSDK exports.TOK_KEY, exports.TOK_SECRET
 
